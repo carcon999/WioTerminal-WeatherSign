@@ -9,7 +9,7 @@ WioTerminalで相鉄の駅にあった電光掲示板を再現するスケッチ
 http://y99.hateblo.jp/entry/2020/05/22/211736
 
 @carcon999の説明サイト
-未定
+https://qiita.com/carcon999/items/aa2b4b8577620e507440
 
 # 使用ライブラリ
 次のライブラリをインストールしてください。
