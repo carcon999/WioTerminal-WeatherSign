@@ -163,7 +163,7 @@ int getWeather(Forecast* forecast) {
 
   tft.println("Request " API_RESOURCE);
   // Make a HTTP request:
-  client.println("GET " API_RESOURCE " HTTP/1.0");
+  client.println("GET " API_RESOURCE " HTTP/1.1");
   client.println("Host: " API_SERVER);
   client.println("User-Agent: WioTerminal/1.0");
   client.println();
@@ -215,6 +215,13 @@ EXIT:
 void drawImage(const uint8_t image[GRAPHIC_HEIGHT][GRAPHIC_WIDTH]){
   // 描画中だけWiFi通信スレッドの優先順位を変更する
   WIFI_THREAD_LOW_PRIORITY();
+
+  // 一度の描画毎に１ドット欠けることにする。（重複もある）
+  int mask_x = random(0, GRAPHIC_WIDTH);
+  int mask_y = random(0, GRAPHIC_HEIGHT);
+  int mask_shift = random(0, 8);
+  uint8_t tmp = WEATHER_MASK[mask_y][mask_x] | (0x01 << mask_shift);
+  WEATHER_MASK[mask_y][mask_x] = tmp;
   
   sprite1.createSprite(320, 240);
   int x = 0;
@@ -222,7 +229,7 @@ void drawImage(const uint8_t image[GRAPHIC_HEIGHT][GRAPHIC_WIDTH]){
     x = 0;
     for(int x_byte=0; x_byte < GRAPHIC_WIDTH; x_byte++){
       for(uint8_t x_bit=0x80; x_bit > 0; x_bit >>= 1){
-        if((image[y][x_byte] & x_bit) != 0){
+        if((image[y][x_byte] & x_bit) != 0 && ((WEATHER_MASK[y][x_byte] & x_bit) == 0)){
           sprite1.fillCircle(OFFSET_X + x * CIRCLE_OFFSET , OFFSET_Y + y * CIRCLE_OFFSET, CIRCLE_RADIUS, TFT_WHITE);
         }
         x++;
@@ -291,6 +298,9 @@ void setup() {
   tft.setBitmapColor(TFT_LAMP, TFT_BLACK);
   tft.fillScreen(TFT_BLACK);
 
+  randomSeed(analogRead(0));  // 乱数種追加
+  pinMode(WIO_KEY_A, INPUT_PULLUP);
+
   updateWeather(true);
 }
 
@@ -318,5 +328,10 @@ void loop() {
   else {
     drawImage(WEATHER_ERROR);
     delay(UPDATE_PERIOD_MS);
+  }
+
+  // Aボタンは電球交換
+  if ( 0 == digitalRead(WIO_KEY_A) ){
+    memset(WEATHER_MASK, 0x00, sizeof(WEATHER_MASK));
   }
 }
